@@ -1,0 +1,15 @@
+[package]
+name = "crudcreator"
+version = "0.1.0"
+authors = ["Carl Fredrik Samson <cf@samson.no>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+quote = "1.0.2"
+syn = {version = "1.0.14", features = ["extra-traits"]}
+proc-macro2 = "1.0.8"
