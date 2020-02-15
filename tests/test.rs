@@ -13,5 +13,6 @@ fn it_works() {
         name: "Leo".to_string(),
     };
 
-    println!("{:?}", m);
+    println!("{}", m.create_sql("persons", "$"));
+    println!("{}", m.update_sql("persons", "$"));
 }
