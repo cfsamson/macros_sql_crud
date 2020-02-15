@@ -7,6 +7,7 @@ Proc macro for creating verbose sql statements from structs
 ```rust
 #[derive(Sql, Debug)]
 struct MyStruct {
+    #[id]
     id: i32,
     name: String,
 };
