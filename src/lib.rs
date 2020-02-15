@@ -7,24 +7,16 @@
 //! use crudcreator::Sql;
 //! 
 //! #[derive(Sql)]
-//! struct MyStruct {
+//! struct T {
 //!     #[id]
 //!     id: i32,
 //!     name: String,
 //! };
 //! 
-//! let m = MyStruct {
-//!     id: 1,
-//!     name: "Abe".to_string(),
-//! };
-//!
-//! assert_eq!(&m.create_sql("persons", "$"), "INSERT INTO persons (id, name) VALUES ($1,$2);");
-//! 
-//! assert_eq!(&m.update_sql("persons", "$"), "UPDATE persons SET (id = $1, name = $2);");
-//! 
-//! assert_eq!(&m.delete_sql("persons", "$"), "DELETE FROM persons WHERE id = $1;");
-//! 
-//! assert_eq!(&m.get_by_id_sql("persons", "$"), "SELECT id, name FROM persons WHERE id = $1;");
+//! assert_eq!(T::create_sql("persons", "$"), "INSERT INTO persons (id, name) VALUES ($1,$2);");
+//! assert_eq!(T::update_sql("persons", "$"), "UPDATE persons SET (id = $1, name = $2);");
+//! assert_eq!(T::delete_sql("persons", "$"), "DELETE FROM persons WHERE id = $1;");
+//! assert_eq!(T::get_by_id_sql("persons", "$"), "SELECT id, name FROM persons WHERE id = $1;");
 //! ```
 //! 
 //! Deriving `Sql` adds two methods to the struct: `create_sql` and `update_sql`.
@@ -101,7 +93,7 @@ pub fn sql(input: TokenStream) -> TokenStream {
 
     let fields_count = struct_fields.len();
     let create = quote!{
-            fn create_sql(&self, tbl_name: &str, param_prefix: &str) -> String {
+            fn create_sql(tbl_name: &str, param_prefix: &str) -> String {
                 use std::fmt::Write;
                 let mut s = String::new();
                 write!(s, "INSERT INTO {} ({}) VALUES (", tbl_name, #sql_field_list).ok();
@@ -115,7 +107,7 @@ pub fn sql(input: TokenStream) -> TokenStream {
     };
 
     let update = quote!{
-            fn update_sql(&self, tbl_name: &str, param_prefix: &str) -> String {
+            fn update_sql(tbl_name: &str, param_prefix: &str) -> String {
                 use std::fmt::Write;
                 let mut s = String::new();
                 write!(s, "UPDATE {} SET (", tbl_name).ok();
@@ -137,7 +129,7 @@ pub fn sql(input: TokenStream) -> TokenStream {
     };
 
     let delete = quote!{
-        fn delete_sql(&self, tbl_name: &str, param_prefix: &str) -> String {
+        fn delete_sql(tbl_name: &str, param_prefix: &str) -> String {
             use std::fmt::Write;
             let mut s = String::new();
             write!(s, "DELETE FROM {} ", tbl_name).ok();
@@ -147,7 +139,7 @@ pub fn sql(input: TokenStream) -> TokenStream {
     };
 
     let get_by_id = quote!{
-            fn get_by_id_sql(&self, tbl_name: &str, param_prefix: &str) -> String {
+            fn get_by_id_sql(tbl_name: &str, param_prefix: &str) -> String {
                 use std::fmt::Write;
                 let mut s = String::new();
                 write!(s, "SELECT {} FROM {} ", #sql_field_list, tbl_name).ok();

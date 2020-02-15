@@ -2,20 +2,16 @@ extern crate crudcreator;
 use crudcreator::Sql;
 
 #[derive(Sql, Debug)]
-struct MyStruct {
+struct T {
     #[id]
     id: i32,
     name: String,
 }
 #[test]
-fn it_works() {
-    let m = MyStruct {
-        id: 1,
-        name: "Abe".to_string(),
-    };
+fn test_print() {
 
-    println!("{}", m.create_sql("persons", "$"));
-    println!("{}", m.update_sql("persons", "$"));
-    println!("{}", m.delete_sql("persons", "$"));
-    println!("{}", m.get_by_id_sql("persons", "$"));
+    println!("{}", T::create_sql("persons", "$"));
+    println!("{}", T::update_sql("persons", "$"));
+    println!("{}", T::delete_sql("persons", "$"));
+    println!("{}", T::get_by_id_sql("persons", "$"));
 }
