@@ -3,10 +3,10 @@
 //! ## Usage
 //! 
 //! ```rust
-//! extern crate crudcreator;
+//! # extern crate crudcreator;
 //! use crudcreator::Sql;
 //! 
-//! #[derive(Sql, Debug)]
+//! #[derive(Sql)]
 //! struct MyStruct {
 //!     #[id]
 //!     id: i32,
@@ -20,10 +20,7 @@
 //!
 //! assert_eq!(&m.create_sql("persons", "$"), "INSERT INTO persons (id, name) VALUES ($1,$2);");
 //! 
-//! assert_eq!(m.update_sql("persons", "$"), "UPDATE persons SET (
-//! id = $1,
-//! name = $2
-//! );");
+//! assert_eq!(m.update_sql("persons", "$"), "UPDATE persons SET (id = $1, name = $2);");
 //! 
 //! assert_eq!(&m.delete_sql("persons", "$"), "DELETE FROM persons WHERE id = $1;");
 //! 
@@ -121,15 +118,14 @@ pub fn sql(input: TokenStream) -> TokenStream {
             fn update_sql(&self, tbl_name: &str, param_prefix: &str) -> String {
                 use std::fmt::Write;
                 let mut s = String::new();
-                writeln!(s, "UPDATE {} SET (", tbl_name).ok();
+                write!(s, "UPDATE {} SET (", tbl_name).ok();
                 // array of fields
                 let fields = &[#(#struct_fields),*];
                 for i in 1..#fields_count + 1 {
-                    writeln!(s, "{} = {}{},", fields[i - 1], param_prefix, i).ok();
+                    write!(s, "{} = {}{}, ", fields[i - 1], param_prefix, i).ok();
                 }
-                s.pop(); // "\n"
+                s.pop(); // " "
                 s.pop(); // ","
-                writeln!(s, "").ok();
                 write!(s, ");").ok();
                 s
             }
