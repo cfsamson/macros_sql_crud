@@ -11,9 +11,11 @@ struct MyStruct {
 fn it_works() {
     let m = MyStruct {
         id: 1,
-        name: "Leo".to_string(),
+        name: "Abe".to_string(),
     };
 
     println!("{}", m.create_sql("persons", "$"));
     println!("{}", m.update_sql("persons", "$"));
+    println!("{}", m.delete_sql("persons", "$"));
+    println!("{}", m.get_by_id_sql("persons", "$"));
 }

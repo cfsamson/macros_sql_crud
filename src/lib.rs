@@ -8,17 +8,26 @@
 //! 
 //! #[derive(Sql, Debug)]
 //! struct MyStruct {
+//!     #[id]
 //!     id: i32,
 //!     name: String,
 //! };
 //! 
 //! let m = MyStruct {
 //!     id: 1,
-//!     name: "Leo".to_string(),
+//!     name: "Abe".to_string(),
 //! };
 //!
-//! println!("{}", m.create_sql("persons", "$"));
-//! println!("{}", m.update_sql("persons", "$"));
+//! assert_eq!(&m.create_sql("persons", "$"), "INSERT INTO persons (id, name) VALUES ($1,$2);");
+//! 
+//! assert_eq!(m.update_sql("persons", "$"), "UPDATE persons SET (
+//! id = $1,
+//! name = $2
+//! );");
+//! 
+//! assert_eq!(&m.delete_sql("persons", "$"), "DELETE FROM persons WHERE id = $1;");
+//! 
+//! assert_eq!(&m.get_by_id_sql("persons", "$"), "SELECT id, name FROM persons WHERE id = $1;");
 //! ```
 //! 
 //! Deriving `Sql` adds two methods to the struct: `create_sql` and `update_sql`.
@@ -54,7 +63,7 @@ pub fn sql(input: TokenStream) -> TokenStream {
     };
 
     let mut struct_fields: Vec<String> = vec![];
-    let mut id_field: Option<(String, String)> = None;
+    let mut id_field: Option<(String, Type)> = None;
 
     for field in fields.named {
         if let Some(ident) = field.ident {
@@ -73,9 +82,9 @@ pub fn sql(input: TokenStream) -> TokenStream {
 
 
             if is_id {
-                let fieldtype = get_type(&field.ty);
+                //let fieldtype = get_type(&field.ty);
                 match &mut id_field {
-                    None => id_field = Some((field_name.clone(),fieldtype)),
+                    None => id_field = Some((field_name.clone(),field.ty.clone())),
                     Some(_) => panic!("Can't have more than one id field."),
                 };
             }
@@ -85,22 +94,24 @@ pub fn sql(input: TokenStream) -> TokenStream {
     }
 
     // We got all the fields and types, now create the impls
-    let mut create_sql = String::new();
+    let mut sql_field_list = String::new();
     for sf in &struct_fields {
-        write!(create_sql, "{},", sf).ok();
+        write!(sql_field_list, "{}, ", sf).ok();
     }
-    create_sql.pop();
+    sql_field_list.pop(); // " "
+    sql_field_list.pop(); // ","
+
 
     let fields_count = struct_fields.len();
     let create = quote!{
             fn create_sql(&self, tbl_name: &str, param_prefix: &str) -> String {
                 use std::fmt::Write;
                 let mut s = String::new();
-                write!(s, "INSERT INTO {} ({}) VALUES (", tbl_name, #create_sql).ok();
+                write!(s, "INSERT INTO {} ({}) VALUES (", tbl_name, #sql_field_list).ok();
                 for i in 1..#fields_count + 1 {
                     write!(s, "{}{},", param_prefix, i).ok();
                 }
-                s.pop();
+                s.pop(); // ","
                 write!(s, ");").ok();
                 s
             }
@@ -114,10 +125,9 @@ pub fn sql(input: TokenStream) -> TokenStream {
                 // array of fields
                 let fields = &[#(#struct_fields),*];
                 for i in 1..#fields_count + 1 {
-                    writeln!(s, "{} = {}{}, ", fields[i - 1], param_prefix, i).ok();
+                    writeln!(s, "{} = {}{},", fields[i - 1], param_prefix, i).ok();
                 }
                 s.pop(); // "\n"
-                s.pop(); // " "
                 s.pop(); // ","
                 writeln!(s, "").ok();
                 write!(s, ");").ok();
@@ -131,15 +141,24 @@ pub fn sql(input: TokenStream) -> TokenStream {
     };
 
     let delete = quote!{
-        fn delete_sql(&self, tbl_name: &str, param_prefix: &str, id: format_ident!(#id_type)) -> String {
+        fn delete_sql(&self, tbl_name: &str, param_prefix: &str) -> String {
             use std::fmt::Write;
             let mut s = String::new();
-            writeln!(s, "DELETE FROM {}", tbl_name).ok();
-            write!(s, "WHERE {} = {}", #id_field, id).ok();
+            write!(s, "DELETE FROM {} ", tbl_name).ok();
+            write!(s, "WHERE {} = {}1;", #id_field, param_prefix).ok();
             s
         }
     };
 
+    let get_by_id = quote!{
+            fn get_by_id_sql(&self, tbl_name: &str, param_prefix: &str) -> String {
+                use std::fmt::Write;
+                let mut s = String::new();
+                write!(s, "SELECT {} FROM {} ", #sql_field_list, tbl_name).ok();
+                write!(s, "WHERE {} = {}1;", #id_field, param_prefix).ok();
+                s
+            }
+    };
 
     let ts = quote!{
         impl #name {
@@ -148,6 +167,8 @@ pub fn sql(input: TokenStream) -> TokenStream {
             #update
 
             #delete
+
+            #get_by_id
         }
     };
 
